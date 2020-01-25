@@ -93,7 +93,9 @@ class NFCScanActivity : AppCompatActivity(), NFCProtocol.NFCReaderListener {
         when(nfcMode) {
             NFC_MODE_READ -> nfcCoroutines.launch { nfcProtocol.readNFCTag(intent) }
             NFC_MODE_WRITE -> {
-                nfcCoroutines.launch { nfcProtocol.writeNFCTag(intent, dataToWrite) }
+                nfcCoroutines.launch {
+                    nfcProtocol.writeNFCTag(intent, dataToWrite)
+                }
             }
         }
     }

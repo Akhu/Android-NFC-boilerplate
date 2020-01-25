@@ -91,8 +91,18 @@ class NFCProtocolIntent(
     }
 
     override fun writeNFCTag(intent: Intent, data: String) {
-        nfcTask(intent, messageToWrite = data)
-        Timber.i("Writing NFC with Data $data")
+        when(val result = nfcTask(intent, messageToWrite = data)) {
+            is NFCTaskResultSuccess -> {
+                listener?.onNFCDataReady(result.message)
+                Timber.i("Writing NFC with Data $data")
+            }
+            is NFCTaskResultFailure -> {
+                Timber.e("Error writing NFC data $data")
+                listener?.onNFCError(result.exception)
+
+            }
+        }
+
     }
 
     private fun switchToState(state: State) {
@@ -106,15 +116,20 @@ class NFCProtocolIntent(
         }
         val tag = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
         val ndef = Ndef.get(tag)
+        try {
+            ndef.connect()
 
-        ndef.connect()
-        if(!ndef.isConnected){
-            return taskFailureFromMessage("Cannot connect to NDEF")
-        }
-        return if(messageToWrite.isEmpty()) {
-            readNdefMessage(ndef)
-        } else {
-            writeNdefMessage(ndef, messageToWrite)
+            if (!ndef.isConnected) {
+                return taskFailureFromMessage("Cannot connect to NDEF")
+            }
+            return if (messageToWrite.isEmpty()) {
+                readNdefMessage(ndef)
+            } else {
+                writeNdefMessage(ndef, messageToWrite)
+            }
+        } catch (exception: Exception){
+            Timber.e(exception)
+            return taskFailureFromMessage("Unhandled Exception=${exception.message}")
         }
     }
 
